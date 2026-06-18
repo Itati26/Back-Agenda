@@ -11,7 +11,7 @@ require "conexion.php";
 
 $MP_TOKEN     = "TEST-2235244122221085-061010-9ff62ece03e1d320d70c11f18577d3ae-3463128623";
 // Usamos google.com como back_url para evitar restricciones de dominios privados de Vercel
-$FRONTEND_URL = "https://tu-agenda-real.vercel.app";
+$FRONTEND_URL = "https://www.google.com";
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -59,44 +59,49 @@ if ($metodo == "GET") {
     exit;
 }
 
-// ── CREAR SUSCRIPCIÓN (Con escudo protector) ──────────────────────
+// ── CREAR SUSCRIPCIÓN (Con validación mejorada) ──────────────────────
 if ($metodo == "POST" && $action == "suscribir") {
+    // Usamos google.com porque es una URL pública que MercadoPago siempre acepta
+    $FRONTEND_URL = "https://www.google.com"; 
+
     $suscripcion = [
-    "reason"             => "Agenda Pro - Plan mensual",
-    "external_reference" => "$id_login",
-    "payer_email"        => "test_user_46945293@testuser.com", 
-    "auto_recurring"     => [
-        "frequency" => 1, 
-        "frequency_type" => "months", 
-        "transaction_amount" => 99, 
-        "currency_id" => "MXN"
-    ],
-    "back_url" => $FRONTEND_URL, // <--- ¡ESTA LÍNEA ES OBLIGATORIA!
-    "status"   => "pending"
-];
+        "reason"             => "Agenda Pro - Plan mensual",
+        "external_reference" => (string)$id_login,
+        "payer_email"        => "test_user_46945293@testuser.com", 
+        "auto_recurring"     => [
+            "frequency" => 1, 
+            "frequency_type" => "months", 
+            "transaction_amount" => 99, 
+            "currency_id" => "MXN"
+        ],
+        "back_url" => $FRONTEND_URL,
+        "status"   => "pending"
+    ];
 
     $ch = curl_init("https://api.mercadopago.com/preapproval");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json", "Authorization: Bearer $MP_TOKEN"]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($suscripcion));
+    
     $respuesta_raw = curl_exec($ch);
+    $http_code     = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Capturamos el código de estado
     curl_close($ch);
 
     $respuesta = json_decode($respuesta_raw, true);
 
-    if (isset($respuesta["id"])) {
-        // Usamos INSERT IGNORE para que errores de base de datos no rompan el proceso
+    // Si el código HTTP es 200 o 201, la creación fue exitosa
+    if ($http_code >= 200 && $http_code < 300 && isset($respuesta["id"])) {
         @mysqli_query($conn, "INSERT IGNORE INTO pagos (id_login, mp_preference_id, monto, descripcion, estado) 
                              VALUES ($id_login, '{$respuesta['id']}', 99, 'Agenda Pro - 1 mes gratis', 'pendiente')");
         
         echo json_encode([
             "ok" => true,
-            "init_point" => $respuesta["init_point"] ?? null,
-            "sandbox_init_point" => $respuesta["sandbox_init_point"] ?? null
+            "init_point" => $respuesta["init_point"] ?? null
         ]);
     } else {
-        echo json_encode(["ok" => false, "error" => "Error de MercadoPago", "detalle" => $respuesta]);
+        // Aquí verás exactamente qué error te manda MercadoPago
+        echo json_encode(["ok" => false, "error" => "MercadoPago rechazó la petición", "status" => $http_code, "detalle" => $respuesta]);
     }
     exit;
 }
