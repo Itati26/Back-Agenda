@@ -19,11 +19,6 @@ $datos  = json_decode(file_get_contents("php://input"), true);
 $correo   = $datos["correo"]    ?? "";
 $password = $datos["contrasena"] ?? "";
 
-if (empty($correo) || empty($password)) {
-    echo json_encode(["error" => "Correo y contraseña son obligatorios"]);
-    exit;
-}
-
 function crearToken($id_login, $correo) {
     $payload = json_encode([
         "id_login" => $id_login,
@@ -35,6 +30,11 @@ function crearToken($id_login, $correo) {
 
 // ── REGISTRAR ────────────────────────────────────────────────────
 if ($action == 'register') {
+    if (empty($correo) || empty($password)) {
+        echo json_encode(["error" => "Correo y contraseña son obligatorios"]);
+        exit;
+    }
+
     $buscar = mysqli_query($conn, "SELECT id_login FROM login WHERE correo = '$correo'");
     if (mysqli_num_rows($buscar) > 0) {
         echo json_encode(["error" => "Ese correo ya está registrado"]);
@@ -61,6 +61,11 @@ if ($action == 'register') {
 
 // ── LOGIN ────────────────────────────────────────────────────────
 if ($action == 'login') {
+    if (empty($correo) || empty($password)) {
+        echo json_encode(["error" => "Correo y contraseña son obligatorios"]);
+        exit;
+    }
+
     $resultado = mysqli_query($conn, "SELECT * FROM login WHERE correo = '$correo'");
     $usuario   = mysqli_fetch_assoc($resultado);
 
@@ -75,7 +80,7 @@ if ($action == 'login') {
         "ok"       => true,
         "id_login" => $usuario["id_login"],
         "correo"   => $usuario["correo"],
-        "is_pro"   => (bool)$usuario["is_pro"],
+        "is_pro"   => (bool)($usuario["is_pro"] ?? false),
         "token"    => $token
     ]);
     exit;
