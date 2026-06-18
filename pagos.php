@@ -66,10 +66,12 @@ if ($metodo == "POST" && $action == "suscribir") {
         "external_reference" => "$id_login",
         "payer_email"        => "test_user_46945293@testuser.com", 
         "auto_recurring"     => [
-            "frequency" => 1, "frequency_type" => "months", "transaction_amount" => 99, "currency_id" => "MXN",
-            "free_trial" => ["frequency" => 1, "frequency_type" => "months"]
+            "frequency" => 1, 
+            "frequency_type" => "months", 
+            "transaction_amount" => 99, 
+            "currency_id" => "MXN"
         ],
-        "back_url" => $FRONTEND_URL,
+        // Quitamos back_url temporalmente para descartar el bloqueo de redirección
         "status"   => "pending"
     ];
 
