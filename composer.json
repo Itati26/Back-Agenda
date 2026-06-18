@@ -1,0 +1,7 @@
+{
+    "name": "railway/php-agenda",
+    "description": "Backend Agenda PHP",
+    "require": {
+        "php": ">=8.0"
+    }
+}
