@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') { http_response_code(200); exit; }
 require "conexion.php";
 
 $MP_TOKEN     = "TEST-2235244122221085-061010-9ff62ece03e1d320d70c11f18577d3ae-3463128623";
-$FRONTEND_URL = "https://frontedn-agenda-tu-usuario.vercel.app";
+$FRONTEND_URL = "https://www.google.com";
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
