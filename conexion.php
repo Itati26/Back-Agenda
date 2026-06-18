@@ -5,22 +5,22 @@
 header("Access-Control-Allow-Origin: *"); 
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Credentials: true");
 
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
     exit(0);
 }
 
-// 2. CONFIGURACIÓN DE LA BASE DE DATOS
-// Usaremos variables de entorno por seguridad, o puedes hardcodear los datos que te dé el hosting
-$host     = isset($_ENV['DB_HOST']) ? $_ENV['DB_HOST'] : 'localhost';
-$dbname   = isset($_ENV['DB_NAME']) ? $_ENV['DB_NAME'] : 'agenda_db';
-$user     = isset($_ENV['DB_USER']) ? $_ENV['DB_USER'] : 'root';
-$password = isset($_ENV['DB_PASS']) ? $_ENV['DB_PASS'] : '';
+// 2. CONFIGURACIÓN DE LA BASE DE DATOS (Usando getenv para Railway)
+$host     = getenv('DB_HOST')     ?: 'localhost';
+$dbname   = getenv('DB_NAME')     ?: 'railway'; // Cambiado a 'railway' según tu panel
+$user     = getenv('DB_USER')     ?: 'root';
+$password = getenv('DB_PASS')     ?: ''; // Lee la variable DB_PASS que tienes en Railway
 
 $conn = mysqli_connect($host, $user, $password, $dbname);
 
 if (!$conn) {
+    header("Content-Type: application/json");
     echo json_encode(["error" => "No se pudo conectar a la BD: " . mysqli_connect_error()]);
     exit;
 }
