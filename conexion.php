@@ -11,16 +11,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
 
-// 2. CONFIGURACIÓN DE LA BASE DE DATOS
-$host     = getenv('DB_HOST')     ?: 'localhost';
-$dbname   = getenv('DB_NAME')     ?: 'railway'; 
-$user     = getenv('DB_USER')     ?: 'root';
-$password = getenv('DB_PASS')     ?: ''; 
-// Agregamos el puerto de Railway (por defecto interno suele ser 3306)
-$port     = getenv('DB_PORT')     ?: '3306'; 
+// 2. CONFIGURACIÓN MEDIANTE MYSQL_URL EXTERNA
+$database_url = getenv('MYSQL_URL');
 
-// Pasamos el $port como quinto parámetro para forzar la conexión interna correcta
-$conn = mysqli_connect($host, $user, $password, $dbname, $port);
+if ($database_url) {
+    // Parseamos la URL para extraer los datos de conexión automáticamente
+    $url = parse_url($database_url);
+    
+    $host     = $url["host"] ?? 'localhost';
+    $user     = $url["user"] ?? 'root';
+    $password = $url["pass"] ?? '';
+    $dbname   = substr($url["path"], 1) ?? 'railway';
+    $port     = $url["port"] ?? 3306;
+    
+    $conn = mysqli_connect($host, $user, $password, $dbname, $port);
+} else {
+    // Respaldo para tu localhost
+    $conn = mysqli_connect('localhost', 'root', '', 'railway');
+}
 
 if (!$conn) {
     header("Content-Type: application/json");
