@@ -16,7 +16,6 @@ $action = $_GET['action'] ?? '';
 
 // ── 🚨 WEBHOOK ───────────────────────────────────────────────────
 if ($metodo == "POST" && $action == "webhook") {
-    // (Tu lógica de webhook se mantiene igual aquí)
     http_response_code(200);
     echo json_encode(["ok" => true]);
     exit;
@@ -36,8 +35,28 @@ if ($metodo == "GET") {
     exit;
 }
 
-// ── CREAR PAGO (Preferencia Estándar) ───────────────────────────
+// ── CREAR PAGO (Preferencia Estándar) / TRUCO FORZAR PRO ─────────
 if ($metodo == "POST" && $action == "suscribir") {
+    
+    // ─── EL TRUCO PARA GUARDAR EL 1 EN LA BD VIA FRONTEND ───
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (isset($input['forzar_pro']) && $input['forzar_pro'] === true) {
+        // Ejecutamos el update directo en tu tabla login
+        $update_pro = mysqli_query($conn, "UPDATE login SET is_pro = 1 WHERE id_login = $id_login");
+        
+        if ($update_pro) {
+            // También insertamos o actualizamos un registro simulado en tu tabla de pagos para el historial
+            mysqli_query($conn, "INSERT INTO pagos (id_login, mp_preference_id, monto, descripcion, estado) 
+                                 VALUES ($id_login, 'FORCED_PRO_OK', 99, 'Suscripción Agenda Pro', 'aprobado')");
+            
+            echo json_encode(["ok" => true, "msg" => "Suscripción forzada a 1 en BD con éxito"]);
+        } else {
+            echo json_encode(["ok" => false, "error" => "No se pudo actualizar la BD"]);
+        }
+        exit;
+    }
+
+    // ─── FLUJO NORMAL MERCADO PAGO ───
     $preferencia = [
         "items" => [[
             "title" => "Suscripción Agenda Pro",
@@ -47,9 +66,9 @@ if ($metodo == "POST" && $action == "suscribir") {
         ]],
         "external_reference" => (string)$id_login,
         "back_urls" => [
-            "success" => "https://www.google.com",
-            "failure" => "https://www.google.com",
-            "pending" => "https://www.google.com"
+            "success" => "https://6a3375ab0a086a7d05f1bd64--notiontec.netlify.app/",
+            "failure" => "https://6a3375ab0a086a7d05f1bd64--notiontec.netlify.app/",
+            "pending" => "https://6a3375ab0a086a7d05f1bd64--notiontec.netlify.app/"
         ],
         "auto_return" => "approved"
     ];
@@ -67,7 +86,6 @@ if ($metodo == "POST" && $action == "suscribir") {
     $respuesta = json_decode($respuesta_raw, true);
 
     if ($http_code == 201) {
-        // Guardamos en BD
         @mysqli_query($conn, "INSERT IGNORE INTO pagos (id_login, mp_preference_id, monto, descripcion, estado) 
                              VALUES ($id_login, '{$respuesta['id']}', 99, 'Agenda Pro', 'pendiente')");
         
@@ -80,7 +98,8 @@ if ($metodo == "POST" && $action == "suscribir") {
 
 // ── CANCELAR ────────────────────────────────────────────────────
 if ($metodo == "POST" && $action == "cancelar") {
-    // (Tu lógica de cancelar aquí)
+    mysqli_query($conn, "UPDATE login SET is_pro = 0 WHERE id_login = $id_login");
+    echo json_encode(["ok" => true, "msg" => "Suscripción cancelada"]);
     exit;
 }
 ?>
