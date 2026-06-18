@@ -11,7 +11,7 @@ header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') { http_response_code(200); exit; }
-
+// cambio de prueba para forzar actualizacion limpia nativa
 require "conexion.php";
 require "leer_token.php"; // deja $id_login listo, o corta con error
 
