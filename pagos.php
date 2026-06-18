@@ -11,7 +11,7 @@ require "conexion.php";
 
 $MP_TOKEN     = "TEST-2235244122221085-061010-9ff62ece03e1d320d70c11f18577d3ae-3463128623";
 // Usamos google.com como back_url para evitar restricciones de dominios privados de Vercel
-$FRONTEND_URL = "https://www.google.com";
+$FRONTEND_URL = "https://tu-agenda-real.vercel.app";
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -62,18 +62,18 @@ if ($metodo == "GET") {
 // ── CREAR SUSCRIPCIÓN (Con escudo protector) ──────────────────────
 if ($metodo == "POST" && $action == "suscribir") {
     $suscripcion = [
-        "reason"             => "Agenda Pro - Plan mensual",
-        "external_reference" => "$id_login",
-        "payer_email"        => "test_user_46945293@testuser.com", 
-        "auto_recurring"     => [
-            "frequency" => 1, 
-            "frequency_type" => "months", 
-            "transaction_amount" => 99, 
-            "currency_id" => "MXN"
-        ],
-        // Quitamos back_url temporalmente para descartar el bloqueo de redirección
-        "status"   => "pending"
-    ];
+    "reason"             => "Agenda Pro - Plan mensual",
+    "external_reference" => "$id_login",
+    "payer_email"        => "test_user_46945293@testuser.com", 
+    "auto_recurring"     => [
+        "frequency" => 1, 
+        "frequency_type" => "months", 
+        "transaction_amount" => 99, 
+        "currency_id" => "MXN"
+    ],
+    "back_url" => $FRONTEND_URL, // <--- ¡ESTA LÍNEA ES OBLIGATORIA!
+    "status"   => "pending"
+];
 
     $ch = curl_init("https://api.mercadopago.com/preapproval");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
