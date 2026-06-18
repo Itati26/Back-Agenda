@@ -13,13 +13,45 @@ header("Content-Type: application/json");
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') { http_response_code(200); exit; }
 
 require "conexion.php";
-require "leer_token.php"; // deja $id_login listo, o corta con error
 
 $MP_TOKEN     = "TEST-2235244122221085-061010-9ff62ece03e1d320d70c11f18577d3ae-3463128623";
 $FRONTEND_URL = "http://localhost:5173";
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
+
+// ── 🚨 EXCEPCIÓN DEL WEBHOOK (MercadoPago no necesita Token) ──────
+if ($metodo == "POST" && $action == "webhook") {
+    $tipo    = $_GET["type"]    ?? "";
+    $data_id = $_GET["data_id"] ?? "";
+
+    if ($tipo == "subscription_preapproval" && $data_id) {
+        $ch = curl_init("https://api.mercadopago.com/preapproval/$data_id");
+        $ch = curl_init("https://api.mercadopago.com/preapproval/$data_id");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $MP_TOKEN"]);
+        $sub = json_decode(curl_exec($ch), true);
+        curl_close($ch);
+
+        $estado_mp  = $sub["status"]             ?? "";
+        $id_usuario = $sub["external_reference"] ?? 0;
+
+        if ($estado_mp == "authorized") {
+            mysqli_query($conn, "UPDATE pagos SET estado='aprobado' WHERE mp_preference_id='$data_id'");
+            mysqli_query($conn, "UPDATE login SET is_pro=1 WHERE id_login=$id_usuario");
+        } elseif ($estado_mp == "cancelled") {
+            mysqli_query($conn, "UPDATE pagos SET estado='cancelado' WHERE mp_preference_id='$data_id'");
+            mysqli_query($conn, "UPDATE login SET is_pro=0 WHERE id_login=$id_usuario");
+        }
+    }
+
+    http_response_code(200);
+    echo json_encode(["ok" => true, "mensaje" => "Webhook procesado"]);
+    exit;
+}
+
+// ── 🔒 PARA TODO LO DEMÁS SÍ PROTEGEMOS CON TOKEN ──────────────────
+require "leer_token.php"; // Deja $id_login listo, o corta con error si el usuario no inició sesión
 
 // ── VER si el usuario es Pro ──────────────────────────────────────
 if ($metodo == "GET") {
@@ -33,7 +65,7 @@ if ($metodo == "GET") {
     }
 
     echo json_encode([
-        "is_pro"    => (bool)$usuario["is_pro"],
+        "is_pro"    => (bool)($usuario["is_pro"] ?? false),
         "historial" => $historial
     ]);
     exit;
@@ -134,34 +166,6 @@ if ($metodo == "POST" && $action == "cancelar") {
     mysqli_query($conn, "UPDATE login SET is_pro=0 WHERE id_login=$id_login");
 
     echo json_encode(["ok" => true, "mensaje" => "Suscripción cancelada"]);
-    exit;
-}
-
-// ── WEBHOOK — MercadoPago avisa cuando el pago cambia ────────────
-if ($metodo == "POST" && $action == "webhook") {
-    $tipo    = $_GET["type"]    ?? "";
-    $data_id = $_GET["data_id"] ?? "";
-
-    if ($tipo == "subscription_preapproval" && $data_id) {
-        $ch = curl_init("https://api.mercadopago.com/preapproval/$data_id");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $MP_TOKEN"]);
-        $sub = json_decode(curl_exec($ch), true);
-        curl_close($ch);
-
-        $estado_mp  = $sub["status"]             ?? "";
-        $id_usuario = $sub["external_reference"] ?? 0;
-
-        if ($estado_mp == "authorized") {
-            mysqli_query($conn, "UPDATE pagos SET estado='aprobado' WHERE mp_preference_id='$data_id'");
-            mysqli_query($conn, "UPDATE login SET is_pro=1 WHERE id_login=$id_usuario");
-        } elseif ($estado_mp == "cancelled") {
-            mysqli_query($conn, "UPDATE pagos SET estado='cancelado' WHERE mp_preference_id='$data_id'");
-            mysqli_query($conn, "UPDATE login SET is_pro=0 WHERE id_login=$id_usuario");
-        }
-    }
-
-    http_response_code(200);
     exit;
 }
 ?>
