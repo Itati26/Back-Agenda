@@ -1,7 +1,5 @@
 <?php
-// conexion.php
 
-// CONFIGURACIÓN MEDIANTE MYSQL_URL EXTERNA
 $database_url = getenv('MYSQL_URL');
 
 if ($database_url) {

@@ -1,9 +1,5 @@
 <?php
-// notas.php
-// GET    → lista las notas del usuario
-// POST   → crea una nota nueva
-// PUT    → edita una nota
-// DELETE → borra una nota
+
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -13,13 +9,13 @@ header("Content-Type: application/json");
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') { http_response_code(200); exit; }
 
 require "conexion.php";
-require "leer_token.php"; // deja $id_login listo, o corta con error
+require "leer_token.php";
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 $datos  = json_decode(file_get_contents("php://input"), true) ?? [];
 $id     = $_GET["id"] ?? 0;
 
-// ── LISTAR ───────────────────────────────────────────────────────
+
 if ($metodo == "GET") {
     $resultado = mysqli_query($conn,
         "SELECT * FROM notas WHERE id_login = $id_login ORDER BY creado_en DESC"
@@ -31,7 +27,7 @@ if ($metodo == "GET") {
     echo json_encode($notas);
 }
 
-// ── CREAR ─────────────────────────────────────────────────────────
+
 elseif ($metodo == "POST") {
     $titulo = $datos["titulo"]      ?? "";
     $desc   = $datos["descripcion"] ?? "";
@@ -53,7 +49,6 @@ elseif ($metodo == "POST") {
     }
 }
 
-// ── EDITAR ────────────────────────────────────────────────────────
 elseif ($metodo == "PUT") {
     $titulo = $datos["titulo"]      ?? "";
     $desc   = $datos["descripcion"] ?? "";
@@ -66,7 +61,7 @@ elseif ($metodo == "PUT") {
     echo json_encode(["ok" => (bool)$ok]);
 }
 
-// ── BORRAR ────────────────────────────────────────────────────────
+
 elseif ($metodo == "DELETE") {
     $ok = mysqli_query($conn,
         "DELETE FROM notas WHERE id_nota=$id AND id_login=$id_login"

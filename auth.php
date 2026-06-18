@@ -1,5 +1,5 @@
 <?php
-// auth.php
+
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
@@ -28,7 +28,6 @@ function crearToken($id_login, $correo) {
     return rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
 }
 
-// ── REGISTRAR ────────────────────────────────────────────────────
 if ($action == 'register') {
     if (empty($correo) || empty($password)) {
         echo json_encode(["error" => "Correo y contraseña son obligatorios"]);
@@ -59,7 +58,6 @@ if ($action == 'register') {
     exit;
 }
 
-// ── LOGIN ────────────────────────────────────────────────────────
 if ($action == 'login') {
     if (empty($correo) || empty($password)) {
         echo json_encode(["error" => "Correo y contraseña son obligatorios"]);

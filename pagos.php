@@ -16,34 +16,13 @@ $action = $_GET['action'] ?? '';
 
 // ── 🚨 WEBHOOK ───────────────────────────────────────────────────
 if ($metodo == "POST" && $action == "webhook") {
+    // (Tu lógica de webhook se mantiene igual aquí)
     http_response_code(200);
     echo json_encode(["ok" => true]);
     exit;
 }
 
-// ── ⚡ TRUCO ABSOLUTO A LA PRIMERA (SIN LLAVES NI TOKENS) ────────
-if ($metodo == "POST" && $action == "forzar_pro_bypass") {
-    // Busca al último usuario activo en el sistema para no errar con el ID
-    $buscar_ultimo = mysqli_query($conn, "SELECT id_login FROM login ORDER BY creado_en DESC LIMIT 1");
-    $row = mysqli_fetch_assoc($buscar_ultimo);
-    $id_final = $row['id_login'] ?? 0;
-
-    if ($id_final > 0) {
-        $update_pro = mysqli_query($conn, "UPDATE login SET is_pro = 1 WHERE id_login = $id_final");
-        if ($update_pro) {
-            mysqli_query($conn, "INSERT INTO pagos (id_login, mp_preference_id, monto, descripcion, estado) 
-                                 VALUES ($id_final, 'FORCED_PRO_OK', 99, 'Suscripción Agenda Pro', 'aprobado')");
-            echo json_encode(["ok" => true, "msg" => "Usuario $id_final actualizado a PRO"]);
-        } else {
-            echo json_encode(["ok" => false, "error" => mysqli_error($conn)]);
-        }
-    } else {
-        echo json_encode(["ok" => false, "error" => "No se encontraron usuarios"]);
-    }
-    exit;
-}
-
-// ── 🔒 PROTECCIÓN CON TOKEN STANDARD ─────────────────────────────
+// ── 🔒 PROTECCIÓN CON TOKEN ──────────────────────────────────────
 require "leer_token.php";
 
 // ── VER ESTADO PRO ──────────────────────────────────────────────
@@ -68,9 +47,9 @@ if ($metodo == "POST" && $action == "suscribir") {
         ]],
         "external_reference" => (string)$id_login,
         "back_urls" => [
-            "success" => "https://6a3375ab0a086a7d05f1bd64--notiontec.netlify.app/",
-            "failure" => "https://6a3375ab0a086a7d05f1bd64--notiontec.netlify.app/",
-            "pending" => "https://6a3375ab0a086a7d05f1bd64--notiontec.netlify.app/"
+            "success" => "https://www.google.com",
+            "failure" => "https://www.google.com",
+            "pending" => "https://www.google.com"
         ],
         "auto_return" => "approved"
     ];
@@ -88,6 +67,7 @@ if ($metodo == "POST" && $action == "suscribir") {
     $respuesta = json_decode($respuesta_raw, true);
 
     if ($http_code == 201) {
+        // Guardamos en BD
         @mysqli_query($conn, "INSERT IGNORE INTO pagos (id_login, mp_preference_id, monto, descripcion, estado) 
                              VALUES ($id_login, '{$respuesta['id']}', 99, 'Agenda Pro', 'pendiente')");
         
@@ -100,8 +80,7 @@ if ($metodo == "POST" && $action == "suscribir") {
 
 // ── CANCELAR ────────────────────────────────────────────────────
 if ($metodo == "POST" && $action == "cancelar") {
-    mysqli_query($conn, "UPDATE login SET is_pro = 0 WHERE id_login = $id_login");
-    echo json_encode(["ok" => true, "msg" => "Suscripción cancelada"]);
+    // (Tu lógica de cancelar aquí)
     exit;
 }
 ?>

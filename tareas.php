@@ -1,9 +1,4 @@
 <?php
-// tareas.php
-// GET    → lista las tareas del usuario
-// POST   → crea una tarea nueva
-// PUT    → edita una tarea
-// DELETE → borra una tarea
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -11,15 +6,14 @@ header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') { http_response_code(200); exit; }
-// cambio de prueba para forzar actualizacion limpia nativa
+
 require "conexion.php";
-require "leer_token.php"; // deja $id_login listo, o corta con error
+require "leer_token.php"; 
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 $datos  = json_decode(file_get_contents("php://input"), true) ?? [];
 $id     = $_GET["id"] ?? 0;
 
-// ── LISTAR ───────────────────────────────────────────────────────
 if ($metodo == "GET") {
     $resultado = mysqli_query($conn,
         "SELECT * FROM tareas WHERE id_login = $id_login ORDER BY fecha_entrega ASC"
@@ -31,7 +25,6 @@ if ($metodo == "GET") {
     echo json_encode($tareas);
 }
 
-// ── CREAR ────────────────────────────────────────────────────────
 elseif ($metodo == "POST") {
     $nombre = $datos["nombre_tarea"]  ?? "";
     $fecha  = $datos["fecha_entrega"] ?? null;
@@ -57,7 +50,7 @@ elseif ($metodo == "POST") {
     }
 }
 
-// ── EDITAR ────────────────────────────────────────────────────────
+
 elseif ($metodo == "PUT") {
     $nombre = $datos["nombre_tarea"]  ?? "";
     $fecha  = $datos["fecha_entrega"] ?? null;
@@ -75,7 +68,6 @@ elseif ($metodo == "PUT") {
     echo json_encode(["ok" => (bool)$ok]);
 }
 
-// ── BORRAR ────────────────────────────────────────────────────────
 elseif ($metodo == "DELETE") {
     $ok = mysqli_query($conn,
         "DELETE FROM tareas WHERE id_tarea=$id AND id_login=$id_login"
