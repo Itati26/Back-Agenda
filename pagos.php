@@ -104,4 +104,68 @@ if ($metodo == "POST" && $action == "suscribir") {
         "Authorization: Bearer $MP_TOKEN"
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($suscripcion));
-    $respuesta_raw = curl_exec
+    $respuesta_raw = curl_exec($ch);
+    $curl_error    = curl_error($ch);
+    $curl_close($ch);
+
+    if ($respuesta_raw === false) {
+        echo json_encode(["error" => "Error al conectar con MercadoPago", "detalle" => $curl_error]);
+        exit;
+    }
+
+    $respuesta = json_decode($respuesta_raw, true);
+    if (!is_array($respuesta)) {
+        echo json_encode(["error" => "Respuesta inválida de MercadoPago", "detalle" => $respuesta_raw]);
+        exit;
+    }
+
+    if (isset($respuesta["id"])) {
+        mysqli_query($conn,
+            "INSERT INTO pagos (id_login, mp_preference_id, monto, descripcion, estado)
+             VALUES ($id_login, '{$respuesta['id']}', 99, 'Agenda Pro - 1 mes gratis', 'pendiente')"
+        );
+        echo json_encode([
+            "ok" => true,
+            "init_point" => $respuesta["init_point"] ?? null,
+            "sandbox_init_point" => $respuesta["sandbox_init_point"] ?? null,
+            "respuesta" => $respuesta
+        ]);
+    } else {
+        echo json_encode(["error" => "MercadoPago no respondió bien", "detalle" => $respuesta]);
+    }
+    exit;
+}
+
+// ── CANCELAR SUSCRIPCIÓN ─────────────────────────────────────────
+if ($metodo == "POST" && $action == "cancelar") {
+
+    $res  = mysqli_query($conn,
+        "SELECT mp_preference_id FROM pagos WHERE id_login=$id_login AND estado='aprobado' LIMIT 1"
+    );
+    $pago = mysqli_fetch_assoc($res);
+
+    if (!$pago) {
+        echo json_encode(["error" => "No tienes suscripción activa"]);
+        exit;
+    }
+
+    $sub_id = $pago["mp_preference_id"];
+
+    $ch = curl_init("https://api.mercadopago.com/preapproval/$sub_id");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Content-Type: application/json",
+        "Authorization: Bearer $MP_TOKEN"
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(["status" => "cancelled"]));
+    curl_exec($ch);
+    curl_close($ch);
+
+    mysqli_query($conn, "UPDATE pagos SET estado='cancelado' WHERE mp_preference_id='$sub_id'");
+    mysqli_query($conn, "UPDATE login SET is_pro=0 WHERE id_login=$id_login");
+
+    echo json_encode(["ok" => true, "mensaje" => "Suscripción cancelada"]);
+    exit;
+}
+?>
