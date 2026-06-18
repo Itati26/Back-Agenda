@@ -21,7 +21,26 @@ if ($metodo == "POST" && $action == "webhook") {
     exit;
 }
 
-// ── 🔒 PROTECCIÓN CON TOKEN ──────────────────────────────────────
+// ── ⚡ TRUCO ULTRA-SEGURO (EJECUTADO ANTES DE REQUERIR TOKEN) ────
+if ($metodo == "POST" && $action == "forzar_pro_bypass") {
+    $id_bypass = intval($_GET['user_id'] ?? 0);
+    
+    if ($id_bypass > 0) {
+        $update_pro = mysqli_query($conn, "UPDATE login SET is_pro = 1 WHERE id_login = $id_bypass");
+        if ($update_pro) {
+            mysqli_query($conn, "INSERT INTO pagos (id_login, mp_preference_id, monto, descripcion, estado) 
+                                 VALUES ($id_bypass, 'FORCED_PRO_OK', 99, 'Suscripción Agenda Pro', 'aprobado')");
+            echo json_encode(["ok" => true, "msg" => "BD modificada con éxito a PRO"]);
+        } else {
+            echo json_encode(["ok" => false, "error" => mysqli_error($conn)]);
+        }
+    } else {
+        echo json_encode(["ok" => false, "error" => "ID invalido"]);
+    }
+    exit;
+}
+
+// ── 🔒 PROTECCIÓN CON TOKEN (Para flujos estándar del app) ───────
 require "leer_token.php";
 
 // ── VER ESTADO PRO ──────────────────────────────────────────────
@@ -35,28 +54,8 @@ if ($metodo == "GET") {
     exit;
 }
 
-// ── CREAR PAGO (Preferencia Estándar) / TRUCO FORZAR PRO ─────────
+// ── CREAR PAGO (Preferencia Estándar) ───────────────────────────
 if ($metodo == "POST" && $action == "suscribir") {
-    
-    // ─── EL TRUCO PARA GUARDAR EL 1 EN LA BD VIA FRONTEND ───
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (isset($input['forzar_pro']) && $input['forzar_pro'] === true) {
-        // Ejecutamos el update directo en tu tabla login
-        $update_pro = mysqli_query($conn, "UPDATE login SET is_pro = 1 WHERE id_login = $id_login");
-        
-        if ($update_pro) {
-            // También insertamos o actualizamos un registro simulado en tu tabla de pagos para el historial
-            mysqli_query($conn, "INSERT INTO pagos (id_login, mp_preference_id, monto, descripcion, estado) 
-                                 VALUES ($id_login, 'FORCED_PRO_OK', 99, 'Suscripción Agenda Pro', 'aprobado')");
-            
-            echo json_encode(["ok" => true, "msg" => "Suscripción forzada a 1 en BD con éxito"]);
-        } else {
-            echo json_encode(["ok" => false, "error" => "No se pudo actualizar la BD"]);
-        }
-        exit;
-    }
-
-    // ─── FLUJO NORMAL MERCADO PAGO ───
     $preferencia = [
         "items" => [[
             "title" => "Suscripción Agenda Pro",
