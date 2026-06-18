@@ -2,6 +2,8 @@
     "name": "railway/php-agenda",
     "description": "Backend Agenda PHP",
     "require": {
-        "php": ">=8.0"
+        "php": ">=8.0",
+        "ext-mysqli": "*",
+        "ext-pdo_mysql": "*"
     }
 }
