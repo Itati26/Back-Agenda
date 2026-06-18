@@ -21,26 +21,29 @@ if ($metodo == "POST" && $action == "webhook") {
     exit;
 }
 
-// ── ⚡ TRUCO ULTRA-SEGURO (EJECUTADO ANTES DE REQUERIR TOKEN) ────
+// ── ⚡ TRUCO ABSOLUTO A LA PRIMERA (SIN LLAVES NI TOKENS) ────────
 if ($metodo == "POST" && $action == "forzar_pro_bypass") {
-    $id_bypass = intval($_GET['user_id'] ?? 0);
-    
-    if ($id_bypass > 0) {
-        $update_pro = mysqli_query($conn, "UPDATE login SET is_pro = 1 WHERE id_login = $id_bypass");
+    // Busca al último usuario activo en el sistema para no errar con el ID
+    $buscar_ultimo = mysqli_query($conn, "SELECT id_login FROM login ORDER BY creado_en DESC LIMIT 1");
+    $row = mysqli_fetch_assoc($buscar_ultimo);
+    $id_final = $row['id_login'] ?? 0;
+
+    if ($id_final > 0) {
+        $update_pro = mysqli_query($conn, "UPDATE login SET is_pro = 1 WHERE id_login = $id_final");
         if ($update_pro) {
             mysqli_query($conn, "INSERT INTO pagos (id_login, mp_preference_id, monto, descripcion, estado) 
-                                 VALUES ($id_bypass, 'FORCED_PRO_OK', 99, 'Suscripción Agenda Pro', 'aprobado')");
-            echo json_encode(["ok" => true, "msg" => "BD modificada con éxito a PRO"]);
+                                 VALUES ($id_final, 'FORCED_PRO_OK', 99, 'Suscripción Agenda Pro', 'aprobado')");
+            echo json_encode(["ok" => true, "msg" => "Usuario $id_final actualizado a PRO"]);
         } else {
             echo json_encode(["ok" => false, "error" => mysqli_error($conn)]);
         }
     } else {
-        echo json_encode(["ok" => false, "error" => "ID invalido"]);
+        echo json_encode(["ok" => false, "error" => "No se encontraron usuarios"]);
     }
     exit;
 }
 
-// ── 🔒 PROTECCIÓN CON TOKEN (Para flujos estándar del app) ───────
+// ── 🔒 PROTECCIÓN CON TOKEN STANDARD ─────────────────────────────
 require "leer_token.php";
 
 // ── VER ESTADO PRO ──────────────────────────────────────────────
