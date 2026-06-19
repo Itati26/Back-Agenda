@@ -1,5 +1,19 @@
 <?php
+// --- CONFIGURACIÓN GLOBAL DE CORS ---
+// Permite que el frontend en Vercel se comunique con este backend en Railway
+$allowed_origin = "https://frontedn-agenda-z23o.vercel.app"; // Tu URL de Vercel
+header("Access-Control-Allow-Origin: $allowed_origin");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Credentials: true");
 
+// Responder inmediatamente a las peticiones OPTIONS (Preflight)
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// --- CONEXIÓN A BASE DE DATOS ---
 $database_url = getenv('MYSQL_URL');
 
 if ($database_url) {
